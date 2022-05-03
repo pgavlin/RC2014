@@ -560,7 +560,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "z180-mini-itx: [-f] [-R] [-r rompath] [-w] [-i idepath] [-S sdpath] [-d debug]\n");
+	fprintf(stderr, "z180-mini-itx: [-f] [-R] [-r rompath] [-w] [-i idepath] [-j] [-S sdpath] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -572,12 +572,13 @@ int main(int argc, char *argv[])
 	char *rompath = "z180-mini-itx.rom";
 	char *sdpath = NULL, *idepath = NULL;
 	char *patha = NULL, *pathb = NULL;
+	int ide_raw_image = 0;
 
 	uint8_t *p = ram;
 	while (p < ram + sizeof(ram))
 		*p++= rand();
 
-	while ((opt = getopt(argc, argv, "A:B:d:fF:lr:RS:i:")) != -1) {
+	while ((opt = getopt(argc, argv, "A:B:d:fF:lr:RS:i:j")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -607,6 +608,9 @@ int main(int argc, char *argv[])
 		case 'i':	/* Model a plugged in CF adapter for debugging convenience on the ROM */
 			idepath = optarg;
 			ide = 1;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'A':
 			patha = optarg;
@@ -652,7 +656,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			}
-			if (ide_attach(ide0, 0, ide_fd) == 0) {
+			if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}

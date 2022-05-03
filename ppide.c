@@ -104,7 +104,7 @@ void ppide_trace(struct ppide *ppide, int onoff)
     ppide->trace = onoff;
 }
 
-int ppide_attach(struct ppide *ppide, int drive, int fd)
+int ppide_attach(struct ppide *ppide, int drive, int fd, int raw)
 {
-    return ide_attach(ppide->ide, drive, fd);
+    return ide_attach(ppide->ide, drive, fd, raw);
 }

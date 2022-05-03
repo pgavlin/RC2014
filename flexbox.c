@@ -474,7 +474,7 @@ static void exit_cleanup(void)
 static void usage(void)
 {
 	fprintf(stderr,
-		"flexbox: [-i idepath] [-f] [-r rompath] [-d debug]\n");
+		"flexbox: [-i idepath] [-j] [-f] [-r rompath] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -486,9 +486,10 @@ int main(int argc, char *argv[])
 	int rom = 1;
 	char *rompath = "6800.rom";
 	char *idepath;
+	int ide_raw_image = 0;
 	unsigned int cycles = 0;
 
-	while ((opt = getopt(argc, argv, "d:fi:r:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:fi:jr:")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -496,6 +497,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			ide = 1;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -533,7 +537,7 @@ int main(int argc, char *argv[])
 			if (ide_fd == -1) {
 				perror(idepath);
 				ide = 0;
-			} else if (ide_attach(ide0, 0, ide_fd) == 0) {
+			} else if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}

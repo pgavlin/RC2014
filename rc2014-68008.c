@@ -405,7 +405,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014-68008: [-1] [-A] [-a] [-b] [-f] [-R] [-r rompath] [-i disk] [-I disk] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014-68008: [-1] [-A] [-a] [-b] [-f] [-R] [-r rompath] [-i disk] [-I disk] [-j] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -416,11 +416,12 @@ int main(int argc, char *argv[])
 	int ppi = 0;
 	char *rompath = "rc2014-68000.rom";
 	char *idepath;
+	int ide_raw_image = 0;
 	int has_rtc = 0;
 	int has_acia = 0;
 	int has_16550a = 0;
 
-	while ((opt = getopt(argc, argv, "1Aabd:fi:r:I:Rw")) != -1) {
+	while ((opt = getopt(argc, argv, "1Aabd:fi:r:I:jRw")) != -1) {
 		switch (opt) {
 		case '1':
 			has_16550a = 1;
@@ -448,6 +449,9 @@ int main(int argc, char *argv[])
 			ppi = 1;
 			ide = 0;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -495,7 +499,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			}
-			if (ide_attach(ide0, 0, ide_fd) == 0) {
+			if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}
@@ -508,7 +512,7 @@ int main(int argc, char *argv[])
 			perror(idepath);
 			ppide = 0;
 		} else {
-			ppide_attach(ppide, 0, ide_fd);
+			ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 			ppide_reset(ppide);
 		}
 		if (trace & TRACE_PPIDE)

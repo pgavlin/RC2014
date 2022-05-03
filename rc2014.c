@@ -2692,7 +2692,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014: [-a] [-A] [-b] [-c] [-f] [- idepath] [-R] [-m mainboard] [-r rompath] [-e rombank] [-s] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014: [-a] [-A] [-b] [-c] [-f] [-i idepath] [-R] [-m mainboard] [-r rompath] [-e rombank] [-s] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -2705,6 +2705,7 @@ int main(int argc, char *argv[])
 	int rombank = 0;
 	char *rompath = "rc2014.rom";
 	char *sdpath = NULL;
+	int ide_raw_image = 0;
 	char *idepath = NULL;
 	char *copro_rom;
 	int save = 0;
@@ -2722,7 +2723,7 @@ int main(int argc, char *argv[])
 	while (p < ramrom + sizeof(ramrom))
 		*p++= rand();
 
-	while ((opt = getopt(argc, argv, "19Aabcd:e:fF:i:I:km:pPr:sRS:Tuw8C:Zz")) != -1) {
+	while ((opt = getopt(argc, argv, "19Aabcd:e:fF:i:I:jkm:pPr:sRS:Tuw8C:Zz")) != -1) {
 		switch (opt) {
 		case 'a':
 			have_acia = 1;
@@ -2777,6 +2778,9 @@ int main(int argc, char *argv[])
 		case 'I':
 			ide = 2;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'c':
 			have_ctc = 1;
@@ -3034,7 +3038,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			}
-			if (ide_attach(ide0, 0, ide_fd) == 0) {
+			if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}
@@ -3050,7 +3054,7 @@ int main(int argc, char *argv[])
 			perror(idepath);
 			ide = 0;
 		} else
-			ppide_attach(ppide, 0, ide_fd);
+			ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 		if (trace & TRACE_PPIDE)
 			ppide_trace(ppide, 1);
 	}

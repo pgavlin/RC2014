@@ -144,13 +144,17 @@ static void ide_fault(struct ide_drive *d, const char *p)
 static off_t xlate_block(struct ide_taskfile *t)
 {
   struct ide_drive *d = t->drive;
+  off_t offset;
+  off_t lba;
   uint16_t cyl;
+
+  offset = d->raw ? 0 : 2;
 
   if (t->lba4 & DEVH_LBA) {
 /*    fprintf(stderr, "XLATE LBA %02X:%02X:%02X:%02X\n",
       t->lba4, t->lba3, t->lba2, t->lba1);*/
     if (d->lba)
-      return 2 + (((t->lba4 & DEVH_HEAD) << 24) | (t->lba3 << 16) | (t->lba2 << 8) | t->lba1);
+      return offset + (((t->lba4 & DEVH_HEAD) << 24) | (t->lba3 << 16) | (t->lba2 << 8) | t->lba1);
     ide_fault(d, "LBA on non LBA drive");
   }
 
@@ -168,7 +172,8 @@ static off_t xlate_block(struct ide_taskfile *t)
   /* Sector 1 is first */
   /* Images generally go cylinder/head/sector. This also matters if we ever
      implement more advanced geometry setting */
-  return 1 + ((cyl * d->heads) + (t->lba4 & DEVH_HEAD)) * d->sectors + t->lba1;
+  lba = ((cyl * d->heads) + (t->lba4 & DEVH_HEAD)) * d->sectors + t->lba1 - 1;
+  return offset + lba;
 }
 
 /* Indicate the drive is ready */
@@ -320,7 +325,7 @@ static void cmd_readsectors_complete(struct ide_taskfile *tf)
   tf->status &= ~ST_BSY;
   /* 0 = 256 sectors */
   d->length = tf->count ? tf->count : 256;
-  /* fprintf(stderr, "READ %d SECTORS @ %ld\n", d->length, d->offset); */
+  /* fprintf(stderr, "READ %d SECTORS @ %lld\n", d->length, d->offset); */
   if (d->offset == -1 ||  lseek(d->fd, 512 * d->offset, SEEK_SET) == -1) {
     tf->status |= ST_ERR;
     tf->status &= ~ST_DSC;
@@ -737,10 +742,96 @@ struct ide_controller *ide_allocate(const char *name)
   return c;
 }
 
+static void make_ascii(uint16_t *p, const char *t, int len)
+{
+  int i;
+  char *d = (char *)p;
+  strncpy(d, t, len);
+
+  for (i = 0; i < len; i += 2) {
+    char c = *d;
+    *d = d[1];
+    d[1] = c;
+    d += 2;
+  }
+}
+
+static void make_serial(uint16_t *p)
+{
+  char buf[21];
+  srand(getpid()^time(NULL));
+  snprintf(buf, 21, "%08d%08d%04d", rand(), rand(), rand());
+  make_ascii(p, buf, 20);
+}
+
+/*
+ * Compute drive identity info from a raw image.
+ */
+int ide_raw_identify(uint16_t *ident, int fd)
+{
+  off_t size;
+  off_t heads;       /* 4 bits */
+  off_t sectors;     /* 8 bits */
+  off_t cylinders;   /* 16 bits */
+  off_t size_blocks;
+  off_t blocks;
+
+  size = lseek(fd, 0, SEEK_END);
+  if (size == -1)
+	  return -1;
+
+  size_blocks = size / 512;
+  if (size % 512)
+	  size_blocks++;
+
+  /* CHS to LBA: = (S - 1) + (C * 255) + (H * 255 * 65536) */
+
+  blocks = size_blocks;
+  heads = blocks / (255 * 65536);
+  blocks = blocks % (255 * 65536);
+  if (blocks)
+	  heads++;
+
+  cylinders = blocks / 255;
+  blocks = blocks % 255;
+  if (blocks)
+	  cylinders++;
+
+  sectors = blocks;
+  if (sectors == 0)
+	  sectors++;
+
+  memset(ident, 0, 512);
+
+  memset(ident, 0, 8);
+  ident[0] = le16((1 << 15) | (1 << 6));	/* Non removable */
+  make_serial(ident + 10);
+  ident[47] = 0; /* no read multi for now */
+  ident[51] = le16(240 /* PIO2 */ << 8);	/* PIO cycle time */
+  ident[53] = le16(1);		/* Geometry words are valid */
+
+  ident[49] = le16(1 << 9); /* LBA */
+  make_ascii(ident + 23, "A001.001", 8);
+  make_ascii(ident + 27, "ACME RAW DISK v0.1", 40);
+
+  ident[1] = le16(cylinders);
+  ident[3] = le16(heads);
+  ident[6] = le16(sectors);
+  ident[54] = ident[1];
+  ident[55] = ident[3];
+  ident[56] = ident[6];
+  ident[57] = le16(size_blocks & 0xFFFF);
+  ident[58] = le16(size_blocks >> 16);
+  ident[60] = ident[57];
+  ident[61] = ident[58];
+
+  return 0;
+}
+
 /*
  *	Attach a file to a device on the controller
  */
-int ide_attach(struct ide_controller *c, int drive, int fd)
+int ide_attach(struct ide_controller *c, int drive, int fd, int raw)
 {
   struct ide_drive *d = &c->drive[drive];
   if (d->present) {
@@ -748,14 +839,23 @@ int ide_attach(struct ide_controller *c, int drive, int fd)
     return -1;
   }
   d->fd = fd;
-  if (read(d->fd, d->data, 512) != 512 ||
+
+  if (!raw) {
+    if (read(d->fd, d->data, 512) != 512 ||
       read(d->fd, d->identify, 512) != 512) {
-    ide_fault(d, "i/o error on attach");
-    return -1;
-  }
-  if (memcmp(d->data, ide_magic, 8)) {
-    ide_fault(d, "bad magic");
-    return -1;
+      ide_fault(d, "i/o error on attach");
+      return -1;
+    }
+    if (memcmp(d->data, ide_magic, 8)) {
+      ide_fault(d, "bad magic");
+      return -1;
+    }
+  } else {
+    if (ide_raw_identify(d->identify, fd)) {
+      ide_fault(d, "i/o error on identify");
+	  return -1;
+	}
+    d->raw = 1;
   }
   d->fd = fd;
   d->present = 1;
@@ -822,29 +922,7 @@ void ide_write_latched(struct ide_controller *c, uint8_t reg, uint8_t v)
   ide_write16(c, reg, d);
 }
 
-static void make_ascii(uint16_t *p, const char *t, int len)
-{
-  int i;
-  char *d = (char *)p;
-  strncpy(d, t, len);
-
-  for (i = 0; i < len; i += 2) {
-    char c = *d;
-    *d = d[1];
-    d[1] = c;
-    d += 2;
-  }
-}
-
-static void make_serial(uint16_t *p)
-{
-  char buf[21];
-  srand(getpid()^time(NULL));
-  snprintf(buf, 21, "%08d%08d%04d", rand(), rand(), rand());
-  make_ascii(p, buf, 20);
-}
-
-int ide_make_drive(uint8_t type, int fd)
+int ide_make_drive(uint8_t type, int fd, int contents)
 {
   uint8_t s, h;
   uint16_t c;
@@ -933,9 +1011,23 @@ int ide_make_drive(uint8_t type, int fd)
   if (write(fd, ident, 512) != 512)
     return -1;
 
+  if (contents != -1) {
+	for (; sectors > 0; sectors--) {
+      ssize_t r = read(contents, ident, 512);
+      if (r == 0)
+        break;
+      if (r < 0)
+        return -1;
+      if (write(fd, ident, r) != r)
+        return -1;
+    }
+  }
+
   memset(ident, 0xE5, 512);
-  while(sectors--)
+  for (; sectors > 0; sectors--) {
     if (write(fd, ident, 512) != 512)
       return -1;
+  }
+
   return 0;
 }

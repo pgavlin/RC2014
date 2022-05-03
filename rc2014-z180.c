@@ -330,7 +330,7 @@ uint8_t z180_csio_write(struct z180_io *io, uint8_t bits)
 
 	if (pspi_cs == 0 && pspi) {
 		r = piratespi_txrx(pspi, bitrev[bits]);
-		if (r == -1)
+		if (r == 0xff)
 			return 0xFF;
 		if (trace & TRACE_SPI)
 			fprintf(stderr,	"[SPI2 %02X:%02X]\n", bitrev[bits], r);
@@ -645,7 +645,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014-z180: [-a] [-b] [-f] [-i idepath] [-P buspirate] [-R] [-r rompath] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014-z180: [-a] [-b] [-f] [-i idepath] [-j] [-P buspirate] [-R] [-r rompath] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -657,6 +657,7 @@ int main(int argc, char *argv[])
 	char *rompath = "rc2014-z180.rom";
 	char *sdpath = NULL;
 	char *idepath = NULL;
+	int ide_raw_image = 0;
 	char *patha = NULL, *pathb = NULL;
 	char *piratepath = NULL;
 	int input = 0;
@@ -665,7 +666,7 @@ int main(int argc, char *argv[])
 	while (p < ramrom + sizeof(ramrom))
 		*p++= rand();
 
-	while ((opt = getopt(argc, argv, "1acd:fF:i:I:lm:r:sP:RS:Twzb")) != -1) {
+	while ((opt = getopt(argc, argv, "1acd:fF:i:I:jlm:r:sP:RS:Twzb")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -680,6 +681,9 @@ int main(int argc, char *argv[])
 		case 'I':
 			ide = 2;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -777,7 +781,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			}
-			if (ide_attach(ide0, 0, ide_fd) == 0) {
+			if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}
@@ -793,7 +797,7 @@ int main(int argc, char *argv[])
 			perror(idepath);
 			ide = 0;
 		} else
-			ppide_attach(ppide, 0, ide_fd);
+			ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 		if (trace & TRACE_PPIDE)
 			ppide_trace(ppide, 1);
 	}

@@ -918,7 +918,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "simple80: [-f] [-t] [-i path] [-r path] [-d debug]\n");
+	fprintf(stderr, "simple80: [-f] [-t] [-i path] [-j] [-r path] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -930,8 +930,9 @@ int main(int argc, char *argv[])
 	int l;
 	char *rompath = "simple80.rom";
 	char *idepath = "simple80.cf";
+	int ide_raw_image = 0;
 
-	while ((opt = getopt(argc, argv, "d:i:r:ftb15S")) != -1) {
+	while ((opt = getopt(argc, argv, "d:i:jr:ftb15S")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -939,6 +940,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			ide = 1;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -989,7 +993,7 @@ int main(int argc, char *argv[])
 		if (fd == -1) {
 			perror(idepath);
 			ide = 0;
-		} else if (ide_attach(ide0, 0, fd) == 0) {
+		} else if (ide_attach(ide0, 0, fd, ide_raw_image) == 0) {
 			ide = 1;
 			ide_reset_begin(ide0);
 		}

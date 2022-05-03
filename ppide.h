@@ -14,5 +14,5 @@ extern void ppide_reset(struct ppide *ppide);
 extern struct ppide *ppide_create(const char *name);
 extern void ppide_free(struct ppide *ppide);
 extern void ppide_trace(struct ppide *ppide, int onoff);
-extern int ppide_attach(struct ppide *ppide, int drive, int fd);
+extern int ppide_attach(struct ppide *ppide, int drive, int fd, int raw);
 #endif

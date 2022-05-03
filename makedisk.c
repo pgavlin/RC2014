@@ -7,8 +7,8 @@
 int main(int argc, const char *argv[])
 {
   int t, fd;
-  if (argc != 3) {
-    fprintf(stderr, "%s [type] [path]\n", argv[0]);
+  if (argc != 3 && argc != 4) {
+    fprintf(stderr, "%s [type] [path] (contents)\n", argv[0]);
     exit(1);
   }
   t = atoi(argv[1]);
@@ -21,7 +21,15 @@ int main(int argc, const char *argv[])
     perror(argv[2]);
     exit(1);
   }
-  if (ide_make_drive(t, fd) < 0) {
+  int contents = -1;
+  if (argc == 4) {
+    contents = open(argv[3], O_RDONLY);
+    if (contents == -1) {
+      perror(argv[3]);
+      exit(1);
+    }
+  }
+  if (ide_make_drive(t, fd, contents) < 0) {
     perror(argv[2]);
     exit(1);
   }

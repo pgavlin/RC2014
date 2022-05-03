@@ -1049,7 +1049,7 @@ static void exit_cleanup(void)
 static void usage(void)
 {
 	fprintf(stderr,
-		"linc80: [-x] [-f] [-b banks] [-r rompath] [-i idepath] [-s sdcard] [-d debug]\n");
+		"linc80: [-x] [-f] [-b banks] [-r rompath] [-i idepath] [-j] [-s sdcard] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -1060,16 +1060,20 @@ int main(int argc, char *argv[])
 	int fd;
 	char *rompath = "linc80.rom";
 	char *idepath = "linc80.ide";
+	int ide_raw_image = 0;
 	char *sdpath = NULL;
 	int banks = 1;
 
-	while ((opt = getopt(argc, argv, "r:i:d:fxb:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "r:i:jd:fxb:s:")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
 			break;
 		case 'i':
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 's':
 			sdpath = optarg;
@@ -1130,7 +1134,7 @@ int main(int argc, char *argv[])
 			perror(idepath);
 			exit(1);
 		}
-		if (ide_attach(ide0, 0, fd) == 0) {
+		if (ide_attach(ide0, 0, fd, ide_raw_image) == 0) {
 			ide = 1;
 			ide_reset_begin(ide0);
 		} else

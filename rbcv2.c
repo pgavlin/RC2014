@@ -235,7 +235,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-    fprintf(stderr, "rcbv2: [-1] [-f] [-r rompath] [-i idepath] [-t] [-p] [-s sdcardpath] [-d tracemask] [-R]\n");
+    fprintf(stderr, "rcbv2: [-1] [-f] [-r rompath] [-i idepath] [-j] [-t] [-p] [-s sdcardpath] [-d tracemask] [-R]\n");
     exit(EXIT_FAILURE);
 }
 
@@ -247,11 +247,12 @@ int main(int argc, char *argv[])
     char *rompath = "sbc.rom";
     char *ppath = NULL;
     char *idepath[2] = { NULL, NULL };
+	int ide_raw_image = 0;
     int i;
     char *ramfpath = NULL;
     unsigned int prop = 0;
 
-    while((opt = getopt(argc, argv, "1r:i:s:ptd:fR:w")) != -1) {
+    while((opt = getopt(argc, argv, "1r:i:js:ptd:fR:w")) != -1) {
         switch(opt) {
             case '1':
                 ram_mask = 0x03;	/* 4 x 32K banks only */
@@ -265,6 +266,9 @@ int main(int argc, char *argv[])
                 else
                     idepath[ide++] = optarg;
                 break;
+			case 'j':
+				ide_raw_image = 1;
+				break;
             case 's':
                 ppath = optarg;
             case 'p':
@@ -312,7 +316,7 @@ int main(int argc, char *argv[])
             if (fd == -1) {
                 perror(idepath[0]);
                 ide = 0;
-            } else if (ppide_attach(ppi0, 0, fd) == 0) {
+            } else if (ppide_attach(ppi0, 0, fd, ide_raw_image) == 0) {
                 ide = 1;
                 ppide_reset(ppi0);
             }
@@ -320,7 +324,7 @@ int main(int argc, char *argv[])
                 fd = open(idepath[1], O_RDWR);
                 if (fd == -1)
                     perror(idepath[1]);
-                ppide_attach(ppi0, 1, fd);
+                ppide_attach(ppi0, 1, fd, ide_raw_image);
             }
         } else
             ide = 0;

@@ -612,7 +612,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014-z8: [-1] [-b] [-B] [-e bank] [-f] [-i cfidepath] [-I ppidepath]\n             [-R] [-r rompath] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014-z8: [-1] [-b] [-B] [-e bank] [-f] [-i cfidepath] [-I ppidepath] [-j]\n             [-R] [-r rompath] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -625,8 +625,9 @@ int main(int argc, char *argv[])
 	int rombank = 0;
 	char *rompath = "rc2014-z8.rom";
 	char *idepath;
+	int ide_raw_image = 0;
 
-	while ((opt = getopt(argc, argv, "1bBd:e:fi:I:r:Rt:w")) != -1) {
+	while ((opt = getopt(argc, argv, "1bBd:e:fi:I:jr:Rt:w")) != -1) {
 		switch (opt) {
 		case '1':
 			uart_16550a = 1;
@@ -654,6 +655,9 @@ int main(int argc, char *argv[])
 		case 'I':
 			ide = 2;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -727,7 +731,7 @@ int main(int argc, char *argv[])
 					perror(idepath);
 					ide = 0;
 				}
-				else if (ide_attach(ide0, 0, ide_fd) == 0) {
+				else if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 					ide = 1;
 					ide_reset_begin(ide0);
 				}
@@ -740,7 +744,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			} else
-				ppide_attach(ppide, 0, ide_fd);
+				ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 			if (trace & TRACE_PPIDE)
 				ppide_trace(ppide, 1);
 		}

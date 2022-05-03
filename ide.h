@@ -48,7 +48,7 @@ struct ide_taskfile {
 struct ide_drive {
   struct ide_controller *controller;
   struct ide_taskfile taskfile;
-  unsigned int present:1, intrq:1, failed:1, lba:1, eightbit:1;
+  unsigned int present:1, intrq:1, failed:1, lba:1, eightbit:1, raw:1;
   uint16_t cylinders;
   uint8_t heads, sectors;
   uint8_t data[512];
@@ -78,9 +78,9 @@ uint8_t ide_read_latched(struct ide_controller *c, uint8_t r);
 void ide_write_latched(struct ide_controller *c, uint8_t r, uint8_t v);
 
 struct ide_controller *ide_allocate(const char *name);
-int ide_attach(struct ide_controller *c, int drive, int fd);
+int ide_attach(struct ide_controller *c, int drive, int fd, int raw);
 void ide_detach(struct ide_drive *d);
 void ide_free(struct ide_controller *c);
 
-int ide_make_drive(uint8_t type, int fd);
+int ide_make_drive(uint8_t type, int fd, int contents);
 #endif

@@ -337,7 +337,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014-6809: [-b] [-f] [-R] [-i idepath] [-I ppidepath] [-r rompath] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014-6809: [-b] [-f] [-R] [-i idepath] [-I ppidepath] [-j] [-r rompath] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -349,9 +349,10 @@ int main(int argc, char *argv[])
 	int rom = 1;
 	char *rompath = "rc2014-tms9995.rom";
 	char *idepath;
+	int ide_raw_image = 0;
 	int tmsin = 0;
 
-	while ((opt = getopt(argc, argv, "1abBd:fi:I:r:Rw")) != -1) {
+	while ((opt = getopt(argc, argv, "1abBd:fi:I:jr:Rw")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -373,6 +374,9 @@ int main(int argc, char *argv[])
 		case 'I':
 			ide = 2;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -438,7 +442,7 @@ int main(int argc, char *argv[])
 					perror(idepath);
 					ide = 0;
 				}
-				else if (ide_attach(ide0, 0, ide_fd) == 0) {
+				else if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 					ide = 1;
 						ide_reset_begin(ide0);
 				}
@@ -451,7 +455,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			} else
-				ppide_attach(ppide, 0, ide_fd);
+				ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 			if (trace & TRACE_PPIDE)
 				ppide_trace(ppide, 1);
 		}

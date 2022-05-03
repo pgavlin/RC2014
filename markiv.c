@@ -374,7 +374,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "markiv: [-f] [-i idepath] [-p proppath] [-r rompath] [-S sdpath] [-d debug]\n");
+	fprintf(stderr, "markiv: [-f] [-i idepath] [-j] [-p proppath] [-r rompath] [-S sdpath] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -387,12 +387,13 @@ int main(int argc, char *argv[])
 	char *sdpath = NULL;
 	char *idepath = NULL;
 	char *proppath = NULL;
+	int ide_raw_image = 0;
 
 	uint8_t *p = ramrom;
 	while (p < ramrom + sizeof(ramrom))
 		*p++= rand();
 
-	while ((opt = getopt(argc, argv, "r:S:i:d:fp:")) != -1) {
+	while ((opt = getopt(argc, argv, "r:S:i:jd:fp:")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -403,6 +404,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			idepath = optarg;
 			ide = 1;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -439,7 +443,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			}
-			if (ide_attach(ide0, 0, ide_fd) == 0) {
+			if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}

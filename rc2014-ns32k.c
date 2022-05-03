@@ -248,7 +248,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014-ns32k: [-1] [-a] [-b] [-B] [-e rombank] [-f] [-i idepath] [-I ppidepath] [-R] [-r rompath] [-e rombank] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014-ns32k: [-1] [-a] [-b] [-B] [-e rombank] [-f] [-i idepath] [-I ppidepath] [-j] [-R] [-r rompath] [-e rombank] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -259,8 +259,9 @@ int main(int argc, char *argv[])
 	int fd;
 	char *rompath = "rc2014-ns32k.rom";
 	char *idepath = NULL;
+	int ide_raw_image = 1;
 
-	while ((opt = getopt(argc, argv, "d:fi:I:r:Rw")) != -1) {
+	while ((opt = getopt(argc, argv, "d:fi:I:jr:Rw")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -272,6 +273,9 @@ int main(int argc, char *argv[])
 		case 'I':
 			ide = 2;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -313,7 +317,7 @@ int main(int argc, char *argv[])
 					perror(idepath);
 					ide = 0;
 				}
-				else if (ide_attach(ide0, 0, ide_fd) == 0) {
+				else if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 					ide = 1;
 					ide_reset_begin(ide0);
 				}
@@ -326,7 +330,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			} else
-				ppide_attach(ppide, 0, ide_fd);
+				ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 			if (trace & TRACE_PPIDE)
 				ppide_trace(ppide, 1);
 		}

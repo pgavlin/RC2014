@@ -36,7 +36,7 @@
 
 #include "keymatrix.h"
 
-#include "nasfont.h"
+//#include "nasfont.h"
 
 #include "58174.h"
 #include "wd17xx.h"

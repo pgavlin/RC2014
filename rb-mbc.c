@@ -279,7 +279,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-    fprintf(stderr, "rb-mbc: [-r rompath] [-i idepath] [-f] [-t] [-d tracemask] [-R]\n");
+    fprintf(stderr, "rb-mbc: [-r rompath] [-i idepath] [-j] [-f] [-t] [-d tracemask] [-R]\n");
     exit(EXIT_FAILURE);
 }
 
@@ -290,9 +290,10 @@ int main(int argc, char *argv[])
     int fd;
     char *rompath = "rb-mbc.rom";
     char *idepath[2] = { NULL, NULL };
+	int ide_raw_image = 0;
     int i;
 
-    while((opt = getopt(argc, argv, "r:i:d:ft")) != -1) {
+    while((opt = getopt(argc, argv, "r:i:jd:ft")) != -1) {
         switch(opt) {
             case 'r':
                 rompath = optarg;
@@ -304,6 +305,9 @@ int main(int argc, char *argv[])
                 else
                     idepath[ide++] = optarg;
                 break;
+			case 'j':
+				ide_raw_image = 1;
+				break;
             case 'd':
                 trace = atoi(optarg);
                 break;
@@ -342,14 +346,14 @@ int main(int argc, char *argv[])
         if (fd == -1) {
             perror(idepath[0]);
             ide = 0;
-        } else if (ppide_attach(ppide, 0, fd) == 0)
+        } else if (ppide_attach(ppide, 0, fd, ide_raw_image) == 0)
             ide = 1;
         if (idepath[1]) {
             fd = open(idepath[1], O_RDWR);
             if (fd == -1)
                 perror(idepath[1]);
             else
-                ppide_attach(ppide, 1, fd);
+                ppide_attach(ppide, 1, fd, ide_raw_image);
         }
     }
 

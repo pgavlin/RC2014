@@ -633,7 +633,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-    fprintf(stderr, "smallz80: [-f] [-r rompath] [-i idepath] [-d tracemask]\n");
+    fprintf(stderr, "smallz80: [-f] [-r rompath] [-i idepath] [-j] [-d tracemask]\n");
     exit(EXIT_FAILURE);
 }
 
@@ -644,8 +644,9 @@ int main(int argc, char *argv[])
     int fd;
     char *rompath = "smallz80.rom";
     char *idepath[2] = { NULL, NULL };
+	int ide_raw_image = 0;
 
-    while((opt = getopt(argc, argv, "r:i:d:f")) != -1) {
+    while((opt = getopt(argc, argv, "r:i:jd:f")) != -1) {
         switch(opt) {
             case 'r':
                 rompath = optarg;
@@ -656,6 +657,9 @@ int main(int argc, char *argv[])
                 else
                     idepath[ide++] = optarg;
                 break;
+			case 'j':
+				ide_raw_image = 1;
+				break;
             case 'd':
                 trace = atoi(optarg);
                 break;
@@ -686,14 +690,14 @@ int main(int argc, char *argv[])
         if (fd == -1)
             perror(idepath[0]);
         else
-            ide_attach(ide0, 0, fd);
+            ide_attach(ide0, 0, fd, ide_raw_image);
 
         if (idepath[1]) {
             fd = open(idepath[1], O_RDWR);
             if (fd == -1)
                 perror(idepath[1]);
             else
-                ide_attach(ide0, 1, fd);
+                ide_attach(ide0, 1, fd, ide_raw_image);
         }
     } else {
         fprintf(stderr, "smallz80: unable to initialize IDE emulation.\n");

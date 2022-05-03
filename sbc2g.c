@@ -605,7 +605,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "sbc2g: [-f] [-b] [-t] [-i path] [-r path] [-d debug]\n");
+	fprintf(stderr, "sbc2g: [-f] [-b] [-t] [-i path] [-j] [-r path] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -617,8 +617,9 @@ int main(int argc, char *argv[])
 	int l;
 	char *rompath = "sbc2g.rom";
 	char *idepath = "sbc2g.cf";
+	int ide_raw_image = 0;
 
-	while ((opt = getopt(argc, argv, "d:i:r:ft")) != -1) {
+	while ((opt = getopt(argc, argv, "d:i:jr:ft")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -626,6 +627,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			ide = 1;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -662,7 +666,7 @@ int main(int argc, char *argv[])
 			perror(idepath);
 			ide = 0;
 		}
-		if (ide_attach(ide0, 0, fd) == 0) {
+		if (ide_attach(ide0, 0, fd, ide_raw_image) == 0) {
 			ide = 1;
 			ide_reset_begin(ide0);
 		}

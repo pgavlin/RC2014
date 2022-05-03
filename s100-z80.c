@@ -170,7 +170,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "s100: [-f] [-i path] [-r path] [-d debug]\n");
+	fprintf(stderr, "s100: [-f] [-i path] [-j] [-r path] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -182,8 +182,9 @@ int main(int argc, char *argv[])
 	int l;
 	char *rompath = "s100.rom";
 	char *idepath = "s100.cf";
+	int ide_raw_image = 0;
 
-	while ((opt = getopt(argc, argv, "d:i:r:ft")) != -1) {
+	while ((opt = getopt(argc, argv, "d:i:jr:ft")) != -1) {
 		switch (opt) {
 		case 'r':
 			rompath = optarg;
@@ -191,6 +192,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			idepath = optarg;
 			break;	
+		case 'j':
+			ide_raw_image = 1;
+			break;
 		case 'd':
 			trace = atoi(optarg);
 			break;
@@ -231,7 +235,7 @@ int main(int argc, char *argv[])
 		if (fd == -1) {
 			perror(idepath);
 			exit(1);
-		} else if (ppide_attach(ppide, 0, fd) == 0) {
+		} else if (ppide_attach(ppide, 0, fd, ide_raw_image) == 0) {
 			ppide_reset(ppide);
 		}
 	}

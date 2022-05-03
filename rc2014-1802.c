@@ -394,10 +394,11 @@ int main(int argc, char *argv[])
 	int rombank = 0;
 	char *rompath = "rc2014-1802.rom";
 	char *idepath;
+	int ide_raw_image = 0;
 	int acia_input;
 	int uart_16550a = 0;
 
-	while ((opt = getopt(argc, argv, "1abBd:e:fi:I:r:Rt:w")) != -1) {
+	while ((opt = getopt(argc, argv, "1abBd:e:fi:I:jr:Rt:w")) != -1) {
 		switch (opt) {
 		case '1':
 			uart_16550a = 1;
@@ -431,6 +432,9 @@ int main(int argc, char *argv[])
 		case 'I':
 			ide = 2;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -513,7 +517,7 @@ int main(int argc, char *argv[])
 					perror(idepath);
 					ide = 0;
 				}
-				else if (ide_attach(ide0, 0, ide_fd) == 0) {
+				else if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 					ide = 1;
 					ide_reset_begin(ide0);
 				}
@@ -526,7 +530,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			} else
-				ppide_attach(ppide, 0, ide_fd);
+				ppide_attach(ppide, 0, ide_fd, ide_raw_image);
 			if (trace & TRACE_PPIDE)
 				ppide_trace(ppide, 1);
 		}

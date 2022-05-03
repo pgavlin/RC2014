@@ -396,7 +396,7 @@ static void exit_cleanup(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "rc2014-65c816: [-1] [-A] [-a] [-b] [-c] [-f] [-R] [-r rompath] [-w] [-d debug]\n");
+	fprintf(stderr, "rc2014-65c816: [-1] [-A] [-a] [-b] [-c] [-f] [-i idepath] [-j] [-R] [-r rompath] [-w] [-d debug]\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -406,10 +406,11 @@ int main(int argc, char *argv[])
 	int fd;
 	char *rompath = "rc2014-65c816-flat.rom";
 	char *idepath;
+	int ide_raw_image = 0;
 	int input = 0;
 	int hasrtc = 0;
 
-	while ((opt = getopt(argc, argv, "1Aabd:fi:r:Rw")) != -1) {
+	while ((opt = getopt(argc, argv, "1Aabd:fi:jr:Rw")) != -1) {
 		switch (opt) {
 		case '1':
 			input = 2;
@@ -432,6 +433,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			ide = 1;
 			idepath = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'd':
 			trace = atoi(optarg);
@@ -476,7 +480,7 @@ int main(int argc, char *argv[])
 				perror(idepath);
 				ide = 0;
 			}
-			if (ide_attach(ide0, 0, ide_fd) == 0) {
+			if (ide_attach(ide0, 0, ide_fd, ide_raw_image) == 0) {
 				ide = 1;
 				ide_reset_begin(ide0);
 			}

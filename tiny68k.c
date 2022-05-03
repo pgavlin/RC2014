@@ -357,7 +357,7 @@ void cpu_set_fc(int fc)
 
 void usage(void)
 {
-	fprintf(stderr, "tiny68k [-0][-1][-2][-e][-R][-r rompath][-i idepath][-d debug].\n");
+	fprintf(stderr, "tiny68k [-0][-1][-2][-e][-R][-r rompath][-i idepath][-j][-d debug].\n");
 	exit(1);
 }
 
@@ -369,8 +369,9 @@ int main(int argc, char *argv[])
 	int opt;
 	const char *romname = "tiny68k.rom";
 	const char *diskname = "tiny68k.ide";
+	int ide_raw_image = 0;
 
-	while((opt = getopt(argc, argv, "012eRfd:i:r:")) != -1) {
+	while((opt = getopt(argc, argv, "012eRfd:i:jr:")) != -1) {
 		switch(opt) {
 		case '0':
 			cputype = M68K_CPU_TYPE_68000;
@@ -395,6 +396,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'i':
 			diskname = optarg;
+			break;
+		case 'j':
+			ide_raw_image = 1;
 			break;
 		case 'r':
 			romname = optarg;
@@ -445,7 +449,7 @@ int main(int argc, char *argv[])
 	ide = ide_allocate("hd0");
 	if (ide == NULL)
 		exit(1);
-	if (ide_attach(ide, 0, fd))
+	if (ide_attach(ide, 0, fd, ide_raw_image))
 		exit(1);
 
 	duart = duart_create();
